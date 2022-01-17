@@ -29,6 +29,10 @@ describe('PubSubAsyncIterator', () => {
     ai = new PubSubAsyncIterator(ps, topic)
   })
 
+  afterEach(() => {
+    sinon.restore()
+  })
+
   it('it converts a single topic to an array of topics', () => {
     const topic = randomUUID()
     const topicAI = new PubSubAsyncIterator(ps, topic)

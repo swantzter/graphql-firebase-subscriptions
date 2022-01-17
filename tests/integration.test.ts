@@ -1,17 +1,16 @@
 /* eslint-env mocha */
-import { initializeApp } from 'firebase-admin/app'
-import assert from 'assert'
-import { getDatabase } from 'firebase-admin/database'
-import { PubSub } from '../src'
+import { getDatabase, Reference } from 'firebase-admin/database'
 import { randomUUID } from 'crypto'
+import assert from 'assert'
+import Sinon from 'sinon'
+import { PubSub } from '../src'
 
-initializeApp({
-  databaseURL: `http://${process.env.GCLOUD_PROJECT}.firebaseio.com`
-})
+const sinon = Sinon.createSandbox()
 
 describe('PubSub - integration', () => {
   afterEach(async () => {
     await getDatabase().ref('/').set({})
+    sinon.restore()
   })
 
   it('Should emit an event via asyncIterator', async () => {
@@ -35,5 +34,24 @@ describe('PubSub - integration', () => {
 
     const alternativeSnap = await getDatabase().ref('/test').get()
     assert.deepStrictEqual(Object.values(alternativeSnap.val()?.[topic]), ['a'])
+  })
+
+  it('Should return event at least once via local cache', async () => {
+    const ref = {
+      child: sinon.stub().returns({
+        child: sinon.stub().returns({
+          set: sinon.stub().resolves(true)
+        }),
+        on: sinon.stub()
+      })
+    } as any as Reference
+
+    const topic = randomUUID()
+    const ps = new PubSub({ localCache: true, ref })
+    const ai = ps.asyncIterator(topic)
+
+    await ps.publish(topic, 'a')
+
+    assert.deepStrictEqual(await ai.next(), { value: 'a', done: false })
   })
 })
