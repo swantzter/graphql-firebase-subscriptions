@@ -1,0 +1,45 @@
+name: QA
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 14
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16
+          cache: npm
+      - run: npm ci --prefer-offline
+      - run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/firebase/emulators/
+          key: ${{ runner.os }}-firebase-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-firebase-
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16
+          cache: npm
+      - uses: actions/setup-java@v2
+        with:
+          distribution: "adopt" # See 'Supported distributions' for available options
+          java-version: "11"
+      - run: npm ci --prefer-offline
+      - run: npx firebase emulators:exec "npm run coverage"
+      - name: Codecov
+        uses: codecov/codecov-action@v1.0.6
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
