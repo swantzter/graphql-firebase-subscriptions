@@ -4,13 +4,25 @@
   "description": "Broadcast graphql messages via firebase realtime database, optional local cache for performance",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./firebase-function": "./dist/firebase-function.js"
+  },
+  "typesVersions": {
+    "*": {
+      "firebase-function": [
+        "dist/firebase-function.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.production.json",
     "watch": "tsc --watch -p tsconfig.production.json",
-    "test:emulator": "firebase emulators:exec \"npm run coverage\"",
     "test": "mocha tests/**/*.test.ts",
-    "coverage": "nyc -r lcov -r text npm test",
+    "test:coverage": "nyc -r lcov -r text npm test",
+    "test:emulator": "firebase emulators:exec \"npm run test:coverage\"",
     "lint": "eslint src/**/*.ts tests/**/*.ts",
+    "lint:fix": "npm run lint -- --fix",
     "prepack": "npm run build"
   },
   "repository": {
@@ -39,6 +51,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.1",
     "firebase-admin": "^10.0.1",
+    "firebase-functions": "^3.16.0",
     "firebase-tools": "^9.16.0",
     "graphql": "^16.0.1",
     "graphql-subscriptions": "^2.0.0",
@@ -50,6 +63,7 @@
   },
   "peerDependencies": {
     "firebase-admin": "^10.0.1",
+    "firebase-functions": "^3.16.0",
     "graphql-subscriptions": "^2.0.0"
   },
   "files": [

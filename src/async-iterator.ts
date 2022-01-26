@@ -1,5 +1,5 @@
-import { $$asyncIterator } from 'iterall'
 import { PubSubEngine } from 'graphql-subscriptions'
+import { $$asyncIterator } from 'iterall'
 
 export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
   private readonly pubSub: PubSubEngine

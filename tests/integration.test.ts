@@ -33,7 +33,7 @@ describe('PubSub - integration', () => {
     assert.deepStrictEqual(defaultSnap.val(), null)
 
     const alternativeSnap = await getDatabase().ref('/test').get()
-    assert.deepStrictEqual(Object.values(alternativeSnap.val()?.[topic]), ['a'])
+    assert.deepStrictEqual(Object.values(alternativeSnap.val()?.[topic]).map((m: any) => m.payload), ['a'])
   })
 
   it('Should return event at least once via local cache', async () => {

@@ -1,9 +1,10 @@
+import { randomUUID } from 'crypto'
+import EventEmitter from 'events'
+import { DataSnapshot, getDatabase, Reference, ServerValue } from 'firebase-admin/database'
 import { PubSubEngine } from 'graphql-subscriptions'
-import { DataSnapshot, getDatabase, Reference } from 'firebase-admin/database'
 import LRUCache from 'lru-cache'
 import { PubSubAsyncIterator } from './async-iterator'
-import EventEmitter from 'events'
-import { randomUUID } from 'crypto'
+import { DEFAULT_PATH } from './helpers'
 
 export interface PubSubOptions {
   ref?: Reference
@@ -29,7 +30,7 @@ export class PubSub implements PubSubEngine {
   private readonly subscriptions: Map<number, { ref: Reference, topic: string, handler: Handler }> = new Map()
 
   constructor ({ ref, localCache }: PubSubOptions = {}) {
-    this.ref = ref ?? getDatabase().ref('/graphql-firebase-subscriptions')
+    this.ref = ref ?? getDatabase().ref(DEFAULT_PATH)
 
     if (localCache) {
       this.localCache = new LRUCache({
@@ -39,24 +40,26 @@ export class PubSub implements PubSubEngine {
     }
   }
 
-  async publish (topic: string, payload: any): Promise<void> {
+  async publish (topic: string | number, payload: any): Promise<void> {
+    const t = topic.toString()
     const id = randomUUID()
-    this.ee?.emit(topic, payload)
+    this.ee?.emit(t, payload)
     this.localCache?.set(id, true)
-    await this.ref.child(topic).child(id).set(payload)
+    await this.ref.child(t).child(id).set({ timestamp: ServerValue.TIMESTAMP, payload })
   }
 
-  async subscribe (topic: string, onMessage: Listener, options: Object): Promise<number> {
+  async subscribe (topic: string | number, onMessage: Listener, options: Object): Promise<number> {
+    const t = topic.toString()
     const handler = (snapshot: DataSnapshot) => {
       if (this.localCache?.has(snapshot.key!)) return
-      onMessage(snapshot.val())
+      onMessage(snapshot.val()?.payload)
     }
     const subId = this.nextSubscriptionId.next().value
-    const ref = this.ref.child(topic)
+    const ref = this.ref.child(t)
     ref.on('child_added', handler)
-    this.ee?.addListener(topic, onMessage)
+    this.ee?.addListener(t, onMessage)
 
-    this.subscriptions.set(subId, { ref, topic, handler })
+    this.subscriptions.set(subId, { ref, topic: t, handler })
 
     return subId
   }
