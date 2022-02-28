@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto'
 import EventEmitter from 'events'
-import { DataSnapshot, getDatabase, Reference, ServerValue } from 'firebase-admin/database'
+import { DataSnapshot, getDatabase, Reference } from 'firebase-admin/database'
 import { PubSubEngine } from 'graphql-subscriptions'
 import LRUCache from 'lru-cache'
 import { PubSubAsyncIterator } from './async-iterator'
@@ -9,6 +9,7 @@ import { DEFAULT_PATH } from './helpers'
 export interface PubSubOptions {
   ref?: Reference
   localCache?: boolean
+  onlyNew?: boolean
 }
 
 type Handler = (a: DataSnapshot, b?: string | null | undefined) => any
@@ -24,13 +25,15 @@ function * subId (): Generator<number, number> {
 export class PubSub implements PubSubEngine {
   readonly ref: Reference
   readonly localCache: LRUCache<string, boolean> | undefined
+  readonly onlyNew: boolean | undefined
   readonly ee: EventEmitter | undefined
 
   private readonly nextSubscriptionId = subId()
   private readonly subscriptions: Map<number, { ref: Reference, topic: string, handler: Handler }> = new Map()
 
-  constructor ({ ref, localCache }: PubSubOptions = {}) {
+  constructor ({ ref, localCache, onlyNew }: PubSubOptions = {}) {
     this.ref = ref ?? getDatabase().ref(DEFAULT_PATH)
+    this.onlyNew = onlyNew
 
     if (localCache) {
       this.localCache = new LRUCache({
@@ -45,14 +48,14 @@ export class PubSub implements PubSubEngine {
     const id = randomUUID()
     this.ee?.emit(t, payload)
     this.localCache?.set(id, true)
-    await this.ref.child(t).child(id).set({ timestamp: ServerValue.TIMESTAMP, payload })
+    await this.ref.child(t).child(id).set({ timestamp: Date.now(), payload })
   }
 
   async subscribe (topic: string | number, onMessage: Listener, options: Object): Promise<number> {
     const t = topic.toString()
     const handler = (snapshot: DataSnapshot) => {
       if (this.localCache?.has(snapshot.key!)) return
-      onMessage(snapshot.val()?.payload)
+      onMessage(snapshot.val()?.payload, snapshot.val()?.timestamp)
     }
     const subId = this.nextSubscriptionId.next().value
     const ref = this.ref.child(t)
@@ -74,6 +77,6 @@ export class PubSub implements PubSubEngine {
   }
 
   public asyncIterator<T>(triggers: string | string[]): AsyncIterator<T> {
-    return new PubSubAsyncIterator<T>(this, triggers)
+    return new PubSubAsyncIterator<T>(this, triggers, this.onlyNew)
   }
 }

@@ -2,7 +2,9 @@ import { PubSubEngine } from 'graphql-subscriptions'
 import { $$asyncIterator } from 'iterall'
 
 export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
+  private readonly createdAt = Date.now()
   private readonly pubSub: PubSubEngine
+  private readonly onlyNew: boolean = false
   private readonly topics: string[]
 
   private pullQueue: Array<(value: IteratorResult<T>) => void> = []
@@ -10,10 +12,11 @@ export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
   private running = true
   private subscriptions: Promise<number[]> | undefined
 
-  constructor (pubSub: PubSubEngine, topics: string | string[]) {
+  constructor (pubSub: PubSubEngine, topics: string | string[], onlyNew?: boolean) {
     this.pubSub = pubSub
     this.topics = typeof topics === 'string' ? [topics] : topics
     this.subscriptions = this.subscribeAll()
+    this.onlyNew = onlyNew === true
   }
 
   public async next (): Promise<IteratorResult<T>> {
@@ -35,7 +38,10 @@ export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
     return this
   }
 
-  private async pushValue (event: T) {
+  private async pushValue (event: T, eventTimestamp: number) {
+    if (this.onlyNew && eventTimestamp < this.createdAt) {
+      return
+    }
     await this.subscriptions
     if (this.pullQueue.length !== 0) {
       this.pullQueue.shift()!(this.running

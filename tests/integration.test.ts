@@ -54,4 +54,19 @@ describe('PubSub - integration', () => {
 
     assert.deepStrictEqual(await ai.next(), { value: 'a', done: false })
   })
+
+  it('Should return only new item', async () => {
+    const topic = randomUUID()
+    const ps = new PubSub({ ref: getDatabase().ref('/test'), onlyNew: true })
+
+    const ai = ps.asyncIterator(topic)
+    await getDatabase().ref('/test')
+      .child(topic)
+      .child(randomUUID())
+      .set({ timestamp: new Date(2000, 1, 1).getTime(), payload: { a: 1 } })
+
+    await ps.publish(topic, { a: 2 })
+
+    assert.deepStrictEqual(await ai.next(), { value: { a: 2 }, done: false })
+  })
 })
