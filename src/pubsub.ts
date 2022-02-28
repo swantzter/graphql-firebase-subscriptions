@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto'
 import EventEmitter from 'events'
-import { DataSnapshot, getDatabase, Reference, ServerValue } from 'firebase-admin/database'
+import { DataSnapshot, getDatabase, Reference } from 'firebase-admin/database'
 import { PubSubEngine } from 'graphql-subscriptions'
 import LRUCache from 'lru-cache'
 import { PubSubAsyncIterator } from './async-iterator'
@@ -48,7 +48,7 @@ export class PubSub implements PubSubEngine {
     const id = randomUUID()
     this.ee?.emit(t, payload)
     this.localCache?.set(id, true)
-    await this.ref.child(t).child(id).set({ timestamp: ServerValue.TIMESTAMP, payload })
+    await this.ref.child(t).child(id).set({ timestamp: Date.now(), payload })
   }
 
   async subscribe (topic: string | number, onMessage: Listener, options: Object): Promise<number> {
