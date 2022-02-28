@@ -2,7 +2,7 @@ import { PubSubEngine } from 'graphql-subscriptions'
 import { $$asyncIterator } from 'iterall'
 
 export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
-  private readonly createdAt = new Date().getTime()
+  private readonly createdAt = Date.now()
   private readonly pubSub: PubSubEngine
   private readonly onlyNew: boolean = false
   private readonly topics: string[]
