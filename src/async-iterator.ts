@@ -15,8 +15,8 @@ export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
   constructor (pubSub: PubSubEngine, topics: string | string[], onlyNew?: boolean) {
     this.pubSub = pubSub
     this.topics = typeof topics === 'string' ? [topics] : topics
-    this.subscriptions = this.subscribeAll()
     this.onlyNew = onlyNew === true
+    this.subscriptions = this.subscribeAll()
   }
 
   public async next (): Promise<IteratorResult<T>> {
