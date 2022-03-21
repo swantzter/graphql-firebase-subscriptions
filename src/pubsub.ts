@@ -29,7 +29,7 @@ export class PubSub implements PubSubEngine {
   readonly ee: EventEmitter | undefined
 
   private readonly nextSubscriptionId = subId()
-  private readonly subscriptions: Map<number, { ref: Reference, topic: string, handler: Handler }> = new Map()
+  private readonly subscriptions: Map<number, { ref: Reference, topic: string, refHandler: Handler, eeHandler: Handler }> = new Map()
 
   constructor ({ ref, localCache, onlyNew }: PubSubOptions = {}) {
     this.ref = ref ?? getDatabase().ref(DEFAULT_PATH)
@@ -53,16 +53,16 @@ export class PubSub implements PubSubEngine {
 
   async subscribe (topic: string | number, onMessage: Listener, options: Object): Promise<number> {
     const t = topic.toString()
-    const handler = (snapshot: DataSnapshot) => {
+    const refHandler = (snapshot: DataSnapshot) => {
       if (this.localCache?.has(snapshot.key!)) return
       onMessage(snapshot.val()?.payload, snapshot.val()?.timestamp)
     }
     const subId = this.nextSubscriptionId.next().value
     const ref = this.ref.child(t)
-    ref.on('child_added', handler)
+    ref.on('child_added', refHandler)
     this.ee?.addListener(t, onMessage)
 
-    this.subscriptions.set(subId, { ref, topic: t, handler })
+    this.subscriptions.set(subId, { ref, topic: t, refHandler, eeHandler: onMessage })
 
     return subId
   }
@@ -72,8 +72,8 @@ export class PubSub implements PubSubEngine {
 
     if (!sub) return
 
-    sub.ref.off('child_added', sub.handler)
-    this.ee?.off(sub.topic, sub.handler)
+    sub.ref.off('child_added', sub.refHandler)
+    this.ee?.off(sub.topic, sub.eeHandler)
   }
 
   public asyncIterator<T>(triggers: string | string[]): AsyncIterator<T> {
