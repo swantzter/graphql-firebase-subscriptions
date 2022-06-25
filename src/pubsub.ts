@@ -37,7 +37,7 @@ export class PubSub implements PubSubEngine {
 
     if (localCache) {
       this.localCache = new LRUCache({
-        maxAge: 60
+        ttl: 60_000
       })
       this.ee = new EventEmitter()
     }
