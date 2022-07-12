@@ -82,13 +82,24 @@ const pubSub = new PubSub({ localCache: true })
 
 ### Only New
 
-This flag allows receiving only messages which were published after client subscription to some topic.
-Default behavior is to receive all messages which were published and not deleted (see Cleanup section).
+This flag allows receiving only messages which were published after client
+subscription to some topic. Default behaviour is to receive all messages which
+were published and not deleted (see Cleanup section).
 
 ```typescript
 import { PubSub } from 'graphql-firebase-subscriptions'
 
 const pubSub = new PubSub({ onlyNew: true })
+```
+
+When creating an asyncIterator you can override this option
+
+```typescript
+import { PubSub } from 'graphql-firebase-subscriptions'
+
+const pubSub = new PubSub({ onlyNew: false })
+
+const iterator = pubSub.asyncIterator(['TOPIC'], { onlyNew: true })
 ```
 
 ### Alternative base ref
