@@ -9,6 +9,11 @@ import { DEFAULT_PATH } from './helpers'
 export interface PubSubOptions {
   ref?: Reference
   localCache?: boolean
+  localCacheMax?: number
+  onlyNew?: boolean
+}
+
+export interface AsyncIteratorOptions {
   onlyNew?: boolean
 }
 
@@ -31,13 +36,13 @@ export class PubSub implements PubSubEngine {
   private readonly nextSubscriptionId = subId()
   private readonly subscriptions: Map<number, { ref: Reference, topic: string, refHandler: Handler, eeHandler: Handler }> = new Map()
 
-  constructor ({ ref, localCache, onlyNew }: PubSubOptions = {}) {
+  constructor ({ ref, localCache, localCacheMax, onlyNew }: PubSubOptions = {}) {
     this.ref = ref ?? getDatabase().ref(DEFAULT_PATH)
     this.onlyNew = onlyNew
 
     if (localCache) {
       this.localCache = new LRUCache({
-        ttl: 60_000
+        max: localCacheMax ?? 10_000
       })
       this.ee = new EventEmitter()
     }
@@ -76,7 +81,7 @@ export class PubSub implements PubSubEngine {
     this.ee?.off(sub.topic, sub.eeHandler)
   }
 
-  public asyncIterator<T>(triggers: string | string[]): AsyncIterator<T> {
-    return new PubSubAsyncIterator<T>(this, triggers, this.onlyNew)
+  public asyncIterator<T>(triggers: string | string[], options?: AsyncIteratorOptions): AsyncIterator<T> {
+    return new PubSubAsyncIterator<T>(this, triggers, options?.onlyNew ?? this.onlyNew)
   }
 }

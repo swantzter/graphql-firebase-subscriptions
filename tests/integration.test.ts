@@ -69,4 +69,23 @@ describe('PubSub - integration', () => {
 
     assert.deepStrictEqual(await ai.next(), { value: { a: 2 }, done: false })
   })
+
+  it('Should be able to override onlyNew on asyncIterator if disabled on instance', async () => {
+    const topic = randomUUID()
+    const ps = new PubSub({ ref: getDatabase().ref('/test'), onlyNew: false })
+    const ps2 = new PubSub({ ref: getDatabase().ref('/test'), onlyNew: true })
+
+    const ai = ps.asyncIterator(topic, { onlyNew: true })
+    const ai2 = ps2.asyncIterator(topic, { onlyNew: false })
+    await getDatabase().ref('/test')
+      .child(topic)
+      .child(randomUUID())
+      .set({ timestamp: new Date(2000, 1, 1).getTime(), payload: { a: 1 } })
+
+    await ps.publish(topic, { a: 2 })
+
+    assert.deepStrictEqual(await ai.next(), { value: { a: 2 }, done: false })
+    assert.deepStrictEqual(await ai2.next(), { value: { a: 1 }, done: false })
+    assert.deepStrictEqual(await ai2.next(), { value: { a: 2 }, done: false })
+  })
 })
