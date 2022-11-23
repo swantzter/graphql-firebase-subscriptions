@@ -42,17 +42,17 @@
   "homepage": "https://github.com/swantzter/graphql-firebase-subscriptions#readme",
   "devDependencies": {
     "@types/lru-cache": "^7.10.10",
-    "@types/mocha": "^9.0.0",
+    "@types/mocha": "^10.0.0",
     "@types/node": "^16.11.7",
     "@types/sinon": "^10.0.6",
     "@typescript-eslint/eslint-plugin": "^5.30.6",
     "eslint": "^8.19.0",
-    "eslint-config-standard-with-typescript": "^22.0.0",
+    "eslint-config-standard-with-typescript": "^23.0.0",
     "eslint-plugin-import": "^2.23.4",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.0.0",
     "firebase-admin": "^11.0.0",
-    "firebase-functions": "^3.16.0",
+    "firebase-functions": "^4.1.0",
     "firebase-tools": "^11.1.0",
     "graphql": "^16.0.1",
     "graphql-subscriptions": "^2.0.0",
@@ -64,7 +64,7 @@
   },
   "peerDependencies": {
     "firebase-admin": "^10.0.1 || ^11.0.0",
-    "firebase-functions": "^3.16.0",
+    "firebase-functions": "^3.16.0 || ^4.0.0",
     "graphql-subscriptions": "^2.0.0"
   },
   "dependencies": {
