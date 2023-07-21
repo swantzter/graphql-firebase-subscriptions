@@ -1,5 +1,5 @@
 /* eslint-env mocha */
-import { getDatabase, Reference } from 'firebase-admin/database'
+import { getDatabase, type Reference } from 'firebase-admin/database'
 import { randomUUID } from 'crypto'
 import assert from 'assert'
 import Sinon from 'sinon'

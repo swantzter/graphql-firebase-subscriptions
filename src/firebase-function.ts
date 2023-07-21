@@ -1,5 +1,5 @@
-import { getDatabase, Reference } from 'firebase-admin/database'
-import { pubsub } from 'firebase-functions'
+import { getDatabase, type Reference, type Query } from 'firebase-admin/database'
+import { logger, pubsub } from 'firebase-functions'
 import { DEFAULT_PATH } from './helpers'
 
 export interface FunctionFactoryOptions {
@@ -27,16 +27,36 @@ export default function getDeletionRoutineFunction ({ ref, schedule, maxAge, top
     const t = Array.isArray(topics) ? topics : Object.values(topics)
 
     for (const topic of t) {
-      await baseRef.child(topic.toString())
+      const query = baseRef.child(topic.toString())
         .orderByChild('timestamp')
         .endAt(Date.now() - (maxAge ?? 10 * 60 * 1000))
-        .once('value', async snap => {
-          const promises: Array<Promise<void>> = []
-          snap.forEach(cSnap => {
-            promises.push(cSnap.ref.remove())
-          })
-          await Promise.allSettled(promises)
-        })
+        .limitToFirst(1000)
+
+      await new Promise<void>((resolve, reject) => {
+        deleteRTDBBatch(query, resolve).catch(reject)
+      })
     }
+  })
+}
+
+async function deleteRTDBBatch (query: Query, resolve: () => void) {
+  const snapshot = await query.get()
+
+  const batchSize = snapshot.numChildren()
+  if (batchSize === 0) {
+    // When there are no documents left, we are done
+    resolve()
+    return
+  }
+
+  logger.info(`RTDB: deleting ${batchSize} nodes from ${snapshot.ref.key}`)
+  const data = snapshot.val()
+  await snapshot.ref.update(Object.fromEntries(Object.keys(data).map(k => [k, null])))
+  logger.info('RTDB: deleted batch')
+
+  // Recurse on the next process tick, to avoid
+  // exploding the stack.
+  process.nextTick(() => {
+    void deleteRTDBBatch(query, resolve)
   })
 }

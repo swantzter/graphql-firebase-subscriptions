@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto'
 import EventEmitter from 'events'
-import { DataSnapshot, getDatabase, Reference } from 'firebase-admin/database'
-import { PubSubEngine } from 'graphql-subscriptions'
-import LRUCache from 'lru-cache'
+import { type DataSnapshot, getDatabase, type Reference } from 'firebase-admin/database'
+import { type PubSubEngine } from 'graphql-subscriptions'
+import { LRUCache } from 'lru-cache'
 import { PubSubAsyncIterator } from './async-iterator'
 import { DEFAULT_PATH } from './helpers'
 
@@ -34,7 +34,7 @@ export class PubSub implements PubSubEngine {
   readonly ee: EventEmitter | undefined
 
   private readonly nextSubscriptionId = subId()
-  private readonly subscriptions: Map<number, { ref: Reference, topic: string, refHandler: Handler, eeHandler: Handler }> = new Map()
+  private readonly subscriptions = new Map<number, { ref: Reference, topic: string, refHandler: Handler, eeHandler: Handler }>()
 
   constructor ({ ref, localCache, localCacheMax, onlyNew }: PubSubOptions = {}) {
     this.ref = ref ?? getDatabase().ref(DEFAULT_PATH)
@@ -56,7 +56,7 @@ export class PubSub implements PubSubEngine {
     await this.ref.child(t).child(id).set({ timestamp: Date.now(), payload })
   }
 
-  async subscribe (topic: string | number, onMessage: Listener, options: Object): Promise<number> {
+  async subscribe (topic: string | number, onMessage: Listener, options: any): Promise<number> {
     const t = topic.toString()
     const refHandler = (snapshot: DataSnapshot) => {
       if (this.localCache?.has(snapshot.key!)) return

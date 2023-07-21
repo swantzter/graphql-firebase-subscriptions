@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 import { randomUUID } from 'crypto'
-import { PubSubEngine } from 'graphql-subscriptions'
+import { type PubSubEngine } from 'graphql-subscriptions'
 import { PubSubAsyncIterator } from '../src/async-iterator'
 import { $$asyncIterator } from 'iterall'
 import Sinon from 'sinon'
@@ -11,7 +11,7 @@ const sinon = Sinon.createSandbox()
 describe('PubSubAsyncIterator', () => {
   let currentSubscriptionId: number
   let ps: PubSubEngine
-  let broadcast: Function
+  let broadcast: (...args: any[]) => any
   let ai: PubSubAsyncIterator<any>
   let topic: string
 

@@ -1,1 +1,1 @@
-export { PubSub, PubSubOptions } from './pubsub'
+export { PubSub, type PubSubOptions } from './pubsub'

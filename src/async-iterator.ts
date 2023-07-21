@@ -1,4 +1,4 @@
-import { PubSubEngine } from 'graphql-subscriptions'
+import { type PubSubEngine } from 'graphql-subscriptions'
 import { $$asyncIterator } from 'iterall'
 
 export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
@@ -7,8 +7,8 @@ export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
   private readonly onlyNew: boolean = false
   private readonly topics: string[]
 
-  private pullQueue: Array<(value: IteratorResult<T>) => void> = []
-  private pushQueue: T[] = []
+  private readonly pullQueue: Array<(value: IteratorResult<T>) => void> = []
+  private readonly pushQueue: T[] = []
   private running = true
   private subscriptions: Promise<number[]> | undefined
 
@@ -71,7 +71,7 @@ export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
   private async emptyQueue () {
     if (this.running) {
       this.running = false
-      this.pullQueue.forEach(resolve => resolve({ value: undefined, done: true }))
+      this.pullQueue.forEach(resolve => { resolve({ value: undefined, done: true }) })
       this.pullQueue.length = 0
       this.pushQueue.length = 0
       const subscriptionIds = await this.subscriptions
