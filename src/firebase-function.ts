@@ -51,6 +51,7 @@ async function deleteRTDBBatch (query: Query, resolve: () => void) {
 
   logger.info(`RTDB: deleting ${batchSize} nodes from ${snapshot.ref.key}`)
   const data = snapshot.val()
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   await snapshot.ref.update(Object.fromEntries(Object.keys(data).map(k => [k, null])))
   logger.info('RTDB: deleted batch')
 

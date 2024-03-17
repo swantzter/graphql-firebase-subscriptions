@@ -33,6 +33,7 @@ describe('PubSub - integration', () => {
     assert.deepStrictEqual(defaultSnap.val(), null)
 
     const alternativeSnap = await getDatabase().ref('/test').get()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     assert.deepStrictEqual(Object.values(alternativeSnap.val()?.[topic]).map((m: any) => m.payload), ['a'])
   })
 
