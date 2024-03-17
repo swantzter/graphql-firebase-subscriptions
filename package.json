@@ -1,6 +1,6 @@
 {
   "name": "graphql-firebase-subscriptions",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Broadcast graphql messages via firebase realtime database, optional local cache for performance",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
