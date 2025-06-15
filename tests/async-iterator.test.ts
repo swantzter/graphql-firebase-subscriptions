@@ -1,8 +1,7 @@
 /* eslint-env mocha */
 import { randomUUID } from 'crypto'
 import { type PubSubEngine } from 'graphql-subscriptions'
-import { PubSubAsyncIterator } from '../src/async-iterator'
-import { $$asyncIterator } from 'iterall'
+import { PubSubAsyncIterableIterator } from '../src/async-iterator'
 import Sinon from 'sinon'
 import assert from 'assert'
 
@@ -12,7 +11,7 @@ describe('PubSubAsyncIterator', () => {
   let currentSubscriptionId: number
   let ps: PubSubEngine
   let broadcast: (...args: any[]) => any
-  let ai: PubSubAsyncIterator<any>
+  let ai: PubSubAsyncIterableIterator<any>
   let topic: string
 
   beforeEach(() => {
@@ -23,10 +22,10 @@ describe('PubSubAsyncIterator', () => {
         currentSubscriptionId += 1
         return currentSubscriptionId
       }),
-      unsubscribe: sinon.spy()
+      unsubscribe: sinon.spy(),
     } as any) as PubSubEngine
     topic = randomUUID()
-    ai = new PubSubAsyncIterator(ps, topic)
+    ai = new PubSubAsyncIterableIterator(ps, topic)
   })
 
   afterEach(() => {
@@ -35,17 +34,17 @@ describe('PubSubAsyncIterator', () => {
 
   it('it converts a single topic to an array of topics', () => {
     const topic = randomUUID()
-    const topicAI = new PubSubAsyncIterator(ps, topic)
+    const topicAI = new PubSubAsyncIterableIterator(ps, topic)
 
-    assert.deepStrictEqual((topicAI as any).topics, [topic])
+    assert.deepStrictEqual((topicAI as any).eventsArray, [topic])
   })
 
   it('accepts multiple topics', () => {
     const topicA = randomUUID()
     const topicB = randomUUID()
-    const topicAI = new PubSubAsyncIterator(ps, [topicA, topicB])
+    const topicAI = new PubSubAsyncIterableIterator(ps, [topicA, topicB])
 
-    assert.deepStrictEqual((topicAI as any).topics, [topicA, topicB])
+    assert.deepStrictEqual((topicAI as any).eventsArray, [topicA, topicB])
   })
 
   it('empties the queue', () => {
@@ -79,12 +78,12 @@ describe('PubSubAsyncIterator', () => {
 
     await assert.rejects(ai.throw(new Error(message)), {
       name: 'Error',
-      message
+      message,
     })
   })
 
   it('is an async iterator', () => {
-    assert.deepStrictEqual((ai as any)[$$asyncIterator](), ai)
+    assert.deepStrictEqual((ai as any)[Symbol.asyncIterator](), ai)
   })
 
   it('resolves immediately', async () => {

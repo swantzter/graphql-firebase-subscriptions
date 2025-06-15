@@ -3,7 +3,7 @@ import EventEmitter from 'events'
 import { type DataSnapshot, getDatabase, type Reference } from 'firebase-admin/database'
 import { type PubSubEngine } from 'graphql-subscriptions'
 import { LRUCache } from 'lru-cache'
-import { PubSubAsyncIterator } from './async-iterator'
+import { PubSubAsyncIterableIterator } from './async-iterator'
 import { DEFAULT_PATH } from './helpers'
 
 export interface PubSubOptions {
@@ -17,7 +17,7 @@ export interface AsyncIteratorOptions {
   onlyNew?: boolean
 }
 
-type Handler = (a: DataSnapshot, b?: string | null | undefined) => any
+type Handler = (a: DataSnapshot, b?: string | null) => any
 type Listener = (...args: any[]) => void
 
 function * subId (): Generator<number, number> {
@@ -27,7 +27,7 @@ function * subId (): Generator<number, number> {
   }
 }
 
-export class PubSub implements PubSubEngine {
+export class PubSub implements Omit<PubSubEngine, 'asyncIterableIterator'> {
   readonly ref: Reference
   readonly localCache: LRUCache<string, boolean> | undefined
   readonly onlyNew: boolean | undefined
@@ -42,7 +42,7 @@ export class PubSub implements PubSubEngine {
 
     if (localCache) {
       this.localCache = new LRUCache({
-        max: localCacheMax ?? 10_000
+        max: localCacheMax ?? 10_000,
       })
       this.ee = new EventEmitter()
     }
@@ -59,7 +59,7 @@ export class PubSub implements PubSubEngine {
   async subscribe (topic: string | number, onMessage: Listener, options: any): Promise<number> {
     const t = topic.toString()
     const refHandler = (snapshot: DataSnapshot) => {
-      if (this.localCache?.has(snapshot.key!)) return
+      if (snapshot.key == null || this.localCache?.has(snapshot.key)) return
       onMessage(snapshot.val()?.payload, snapshot.val()?.timestamp)
     }
     const subId = this.nextSubscriptionId.next().value
@@ -81,7 +81,7 @@ export class PubSub implements PubSubEngine {
     this.ee?.off(sub.topic, sub.eeHandler)
   }
 
-  public asyncIterator<T>(triggers: string | string[], options?: AsyncIteratorOptions): AsyncIterator<T> {
-    return new PubSubAsyncIterator<T>(this, triggers, options?.onlyNew ?? this.onlyNew)
+  public asyncIterableIterator<T>(triggers: string | readonly string[], options?: AsyncIteratorOptions): PubSubAsyncIterableIterator<T> {
+    return new PubSubAsyncIterableIterator<T>(this as unknown as PubSubEngine, triggers, options?.onlyNew ?? this.onlyNew)
   }
 }

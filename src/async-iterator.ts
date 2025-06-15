@@ -1,26 +1,25 @@
 import { type PubSubEngine } from 'graphql-subscriptions'
-import { $$asyncIterator } from 'iterall'
 
-export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
+export class PubSubAsyncIterableIterator<T> implements AsyncIterableIterator<T> {
   private readonly createdAt = Date.now()
-  private readonly pubSub: PubSubEngine
+  private readonly pubsub: PubSubEngine
   private readonly onlyNew: boolean = false
-  private readonly topics: string[]
+  private readonly eventsArray: readonly string[]
 
-  private readonly pullQueue: Array<(value: IteratorResult<T>) => void> = []
-  private readonly pushQueue: T[] = []
+  private pullQueue: Array<(value: IteratorResult<T>) => void> = []
+  private pushQueue: T[] = []
   private running = true
-  private subscriptions: Promise<number[]> | undefined
+  private allSubscribed: Promise<number[]> | undefined
 
-  constructor (pubSub: PubSubEngine, topics: string | string[], onlyNew?: boolean) {
-    this.pubSub = pubSub
-    this.topics = typeof topics === 'string' ? [topics] : topics
+  constructor (pubSub: PubSubEngine, topics: string | readonly string[], onlyNew?: boolean) {
+    this.pubsub = pubSub
+    this.eventsArray = typeof topics === 'string' ? [topics] : topics
     this.onlyNew = onlyNew === true
-    this.subscriptions = this.subscribeAll()
+    this.allSubscribed = this.subscribeAll()
   }
 
   public async next (): Promise<IteratorResult<T>> {
-    if (!this.subscriptions) { await (this.subscriptions = this.subscribeAll()) }
+    if (!this.allSubscribed) { await (this.allSubscribed = this.subscribeAll()) }
     return await this.pullValue()
   }
 
@@ -29,12 +28,12 @@ export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
     return { value: undefined, done: true }
   }
 
-  public async throw (error: any) {
+  public async throw (error: Error): Promise<never> {
     await this.emptyQueue()
     return await Promise.reject(error)
   }
 
-  public [$$asyncIterator] () {
+  public [Symbol.asyncIterator] () {
     return this
   }
 
@@ -42,8 +41,9 @@ export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
     if (this.onlyNew && eventTimestamp < this.createdAt) {
       return
     }
-    await this.subscriptions
+    await this.allSubscribed
     if (this.pullQueue.length !== 0) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.pullQueue.shift()!(this.running
         ? { value: event, done: false }
         : { value: undefined, done: true }
@@ -58,6 +58,7 @@ export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
       resolve => {
         if (this.pushQueue.length !== 0) {
           resolve(this.running
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             ? { value: this.pushQueue.shift()!, done: false }
             : { value: undefined, done: true }
           )
@@ -74,20 +75,20 @@ export class PubSubAsyncIterator<T> implements AsyncIterator<T> {
       this.pullQueue.forEach(resolve => { resolve({ value: undefined, done: true }) })
       this.pullQueue.length = 0
       this.pushQueue.length = 0
-      const subscriptionIds = await this.subscriptions
+      const subscriptionIds = await this.allSubscribed
       if (subscriptionIds) { this.unsubscribeAll(subscriptionIds) }
     }
   }
 
   private async subscribeAll () {
-    return await Promise.all(this.topics.map(
-      async t => await this.pubSub.subscribe(t, this.pushValue.bind(this), {})
+    return await Promise.all(this.eventsArray.map(
+      async t => await this.pubsub.subscribe(t, this.pushValue.bind(this), {})
     ))
   }
 
   private unsubscribeAll (subscriptionIds: number[]) {
     for (const subscriptionId of subscriptionIds) {
-      this.pubSub.unsubscribe(subscriptionId)
+      this.pubsub.unsubscribe(subscriptionId)
     }
   }
 }

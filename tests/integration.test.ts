@@ -16,7 +16,7 @@ describe('PubSub - integration', () => {
   it('Should emit an event via asyncIterator', async () => {
     const topic = randomUUID()
     const ps = new PubSub()
-    const ai = ps.asyncIterator(topic)
+    const ai = ps.asyncIterableIterator(topic)
 
     await ps.publish(topic, { a: 1 })
 
@@ -41,15 +41,15 @@ describe('PubSub - integration', () => {
     const ref = {
       child: sinon.stub().returns({
         child: sinon.stub().returns({
-          set: sinon.stub().resolves(true)
+          set: sinon.stub().resolves(true),
         }),
-        on: sinon.stub()
-      })
-    } as any as Reference
+        on: sinon.stub(),
+      }),
+    } as unknown as Reference
 
     const topic = randomUUID()
     const ps = new PubSub({ localCache: true, ref })
-    const ai = ps.asyncIterator(topic)
+    const ai = ps.asyncIterableIterator(topic)
 
     await ps.publish(topic, 'a')
 
@@ -60,7 +60,7 @@ describe('PubSub - integration', () => {
     const topic = randomUUID()
     const ps = new PubSub({ ref: getDatabase().ref('/test'), onlyNew: true })
 
-    const ai = ps.asyncIterator(topic)
+    const ai = ps.asyncIterableIterator(topic)
     await getDatabase().ref('/test')
       .child(topic)
       .child(randomUUID())
@@ -76,8 +76,8 @@ describe('PubSub - integration', () => {
     const ps = new PubSub({ ref: getDatabase().ref('/test'), onlyNew: false })
     const ps2 = new PubSub({ ref: getDatabase().ref('/test'), onlyNew: true })
 
-    const ai = ps.asyncIterator(topic, { onlyNew: true })
-    const ai2 = ps2.asyncIterator(topic, { onlyNew: false })
+    const ai = ps.asyncIterableIterator(topic, { onlyNew: true })
+    const ai2 = ps2.asyncIterableIterator(topic, { onlyNew: false })
     await getDatabase().ref('/test')
       .child(topic)
       .child(randomUUID())

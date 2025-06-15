@@ -1,5 +1,5 @@
 import { getDatabase, type Reference, type Query } from 'firebase-admin/database'
-import { logger, pubsub } from 'firebase-functions'
+import { logger, scheduler } from 'firebase-functions'
 import { DEFAULT_PATH } from './helpers'
 
 export interface FunctionFactoryOptions {
@@ -21,7 +21,7 @@ export interface FunctionFactoryOptions {
 }
 
 export default function getDeletionRoutineFunction ({ ref, schedule, maxAge, topics }: FunctionFactoryOptions) {
-  return pubsub.schedule(schedule ?? 'every 10 minutes').onRun(async () => {
+  return scheduler.onSchedule(schedule ?? 'every 10 minutes', async () => {
     const baseRef = ref ?? getDatabase().ref(DEFAULT_PATH)
 
     const t = Array.isArray(topics) ? topics : Object.values(topics)
