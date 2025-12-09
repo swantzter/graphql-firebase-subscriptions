@@ -1,6 +1,7 @@
 import { getDatabase, type Reference, type Query } from 'firebase-admin/database'
 import { logger, scheduler } from 'firebase-functions'
 import { DEFAULT_PATH } from './helpers'
+import type { ScheduleOptions } from 'firebase-functions/scheduler'
 
 export interface FunctionFactoryOptions {
   /** Supports an array or an enum */
@@ -18,10 +19,17 @@ export interface FunctionFactoryOptions {
    * will delete messages older than this amount of milliseconds
    */
   maxAge?: number
+  /**
+   * Allows overriding things like region, timeouts, etc.
+   */
+  functionOptions?: Omit<ScheduleOptions, 'schedule'>
 }
 
-export default function getDeletionRoutineFunction ({ ref, schedule, maxAge, topics }: FunctionFactoryOptions) {
-  return scheduler.onSchedule(schedule ?? 'every 10 minutes', async () => {
+export default function getDeletionRoutineFunction ({ ref, schedule, maxAge, topics, functionOptions }: FunctionFactoryOptions) {
+  return scheduler.onSchedule({
+    ...(functionOptions ?? {}),
+    schedule: schedule ?? 'every 10 minutes',
+  }, async () => {
     const baseRef = ref ?? getDatabase().ref(DEFAULT_PATH)
 
     const t = Array.isArray(topics) ? topics : Object.values(topics)
